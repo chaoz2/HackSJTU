@@ -8,7 +8,7 @@ GPU_ID = 0
 caffe.set_mode_gpu()
 caffe.set_device(GPU_ID)
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 net = caffe.Net('/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/deploy.prototxt',
                     '/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/KC_NET_V1_VOC_224x224.caffemodel',
                     caffe.TEST)
@@ -33,7 +33,6 @@ def preprocess(frame):
     data = np.array(np.array([b, g, r]))
     return data
 
-
 def mainLoop():
     # rgbDisplayLoop()
     while (True):
@@ -42,9 +41,14 @@ def mainLoop():
         net.blobs['data'].data[...] = data
         out = net.forward()['detection_out'][0][0]
         print out.shape
-        print ("label:%f confidential:%f"%(out[0][1], out[0][2]))
+        # print ("label:%f conf:%f"%(out[0][1], out[0][2]))
 
-        
+        out = out[out[:, 2] > 0.5]
+        print out.shape
+
+        for res in out:
+            print ("label:%f conf:%f" % (out[0][1], out[0][2]))
+
         cv2.imshow("origin", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
