@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+import rospy
+from std_msgs.msg import String
 import caffe
 from caffe.proto import caffe_pb2
 
@@ -12,6 +14,8 @@ cap = cv2.VideoCapture(0)
 net = caffe.Net('/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/deploy.prototxt',
                     '/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/KC_NET_V1_VOC_224x224.caffemodel',
                     caffe.TEST)
+
+global pub
 
 
 def toSmallFrame(frame, nwidth):
@@ -33,6 +37,44 @@ def preprocess(frame):
     data = np.array(np.array([b, g, r]))
     return data
 
+def setup():
+    global pub
+    pub = rospy.Publisher('chatter', String, queue_size = 10)
+    rospy.init_node('talker', anonymous = True)
+
+    # TODO: if need to set rate
+    # rate = rospy.Rate(10)
+
+def labelToObj(label):
+    if (label == 2):
+        return 'bike'
+    elif (label == 3):
+        return 'bird'
+    elif (label == 4):
+        return 'ship'
+    elif (label == 6):
+        return 'bus'
+    elif (label == 7):
+        return 'car'
+    elif (label == 8):
+        return 'cat'
+    elif (label == 9):
+        return 'chair'
+    elif (label == 10):
+        return 'bull'
+    elif (label == 12):
+        return 'dog'
+    elif (label == 15):
+        return 'horse'
+    elif (label == 17):
+        return 'sheep'
+    elif (label == 18):
+        return 'sofa'
+    elif (label == 19):
+        return 'train'
+    else
+        return 'other'
+
 def mainLoop():
     # rgbDisplayLoop()
     while (True):
@@ -40,16 +82,25 @@ def mainLoop():
         data = preprocess(frame)
         net.blobs['data'].data[...] = data
         out = net.forward()['detection_out'][0][0]
-        print out.shape
+        # print out.shape
         # print ("label:%f conf:%f"%(out[0][1], out[0][2]))
 
         out = out[out[:, 2] > 0.5]
         print out.shape
 
-        for res in out:
-            print ("label:%f conf:%f" % (out[0][1], out[0][2]))
 
-        cv2.imshow("origin", frame)
+        if len(out) != 0:
+            max_conf = 0.0
+            label = 0.0
+            for res in out:
+                # print ("label:%f conf:%f" % (out[0][1], out[0][2]))
+                if (res[2] > max_conf):
+                    label = int(res[1])
+            thing = labelToObj(label)
+            pub.publish(thing)
+
+
+        cv2.imshow("camera", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
