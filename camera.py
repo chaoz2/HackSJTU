@@ -1,35 +1,51 @@
 import numpy as np
 import cv2
+import caffe
+from caffe.proto import caffe_pb2
 
-cap = cv2.VideoCapture(0)
+
+GPU_ID = 0
+caffe.set_mode_gpu()
+caffe.set_device(GPU_ID)
+
+cap = cv2.VideoCapture(1)
+net = caffe.Net('/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/deploy.prototxt',
+                    '/home/ubuntu/Documents/HackSJTU/nv-ssd-detection-model/model/KC_NET_V1_VOC_224x224.caffemodel',
+                    caffe.TEST)
 
 
 def toSmallFrame(frame, nwidth):
     shape = frame.shape
-    nheight = nwidth * shape[0] / shape[1]
+    # nheight = nwidth * shape[0] / shape[1]
+    nheight = 224
     smallFrame = cv2.resize(frame, (nwidth, nheight))
-    print ("new height: %d" % (nheight))
     return smallFrame, nheight
 
 
 def preprocess(frame):
-    nwidth = 244;
+    nwidth = 224
     smallFrame, nheight = toSmallFrame(frame, nwidth)
-    arraySize = nheight * nwidth
+    # arraySize = nheight * nwidth
     b, g, r = cv2.split(smallFrame)
-    vector = np.reshape(b, (-1, 1))
-    vector = np.append(vector, [np.reshape(g, (-1, 1)), np.reshape(r, (-1, 1))])
-    print vector.shape
-    return smallFrame
+    # vector = np.reshape(b, (-1, 1))
+    # vector = np.append(vector, [np.reshape(g, (-1, 1)), np.reshape(r, (-1, 1))])
+    # print vector.shape
+    data = np.array(np.array([b, g, r]))
+    return data
 
 
 def mainLoop():
     # rgbDisplayLoop()
     while (True):
         ret, frame = cap.read()
-        smallFrame = preprocess(frame)
+        data = preprocess(frame)
+        net.blobs['data'].data[...] = data
+        out = net.forward()['detection_out'][0][0]
+        print out.shape
+        print ("label:%f confidential:%f"%(out[0][1], out[0][2]))
 
-        cv2.imshow("resized", smallFrame)
+        
+        cv2.imshow("origin", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
