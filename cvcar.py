@@ -227,7 +227,6 @@ def shiftClick():
     t.shift()
 '''
 
-
 def spaceClick():
     t.space()
 
@@ -309,4 +308,3 @@ if __name__ == '__main__':
     right.grid(row=2, column=3)
     back.grid(row=2, column=2)
     videoButton.grid(row=0, column=0)
-    root.mainloop()

@@ -101,7 +101,6 @@ def mainLoop():
     counter = 0
     lastLabel = -1
     while (True):
-
         ret, frame = cap.read()
         
         if (counter == 12):
